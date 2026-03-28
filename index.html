@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロンプト一覧</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; padding: 15px; margin: 0; }
+        .container { max-width: 500px; margin: 0 auto; padding-bottom: 30px; }
+        h1 { font-size: 20px; text-align: center; color: #333; margin-bottom: 20px; }
+        
+        button { cursor: pointer; border: none; border-radius: 6px; font-size: 14px; padding: 10px; transition: 0.2s; }
+        button:active { opacity: 0.8; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .btn-green { background-color: #28a745; color: white; font-weight: bold; }
+        .btn-blue { background-color: #007bff; color: white; font-weight: bold; }
+        .btn-gray { background-color: #6c757d; color: white; font-weight: bold; }
+        .btn-dark { background-color: #343a40; color: white; font-weight: bold; }
+        .btn-yellow { background-color: #ffc107; color: #333; font-weight: bold; }
+        .btn-red { background-color: #dc3545; color: white; font-weight: bold; }
+        .btn-outline { background-color: transparent; border: 2px solid #007bff; color: #007bff; font-weight: bold; }
+
+        .full-width-btn { width: 100%; padding: 15px; margin-bottom: 15px; font-size: 16px; }
+        .view-section { display: none; }
+        .list-item { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        
+        .category-btn { width: 100%; text-align: left; background-color: #e2e8f0; color: #333; font-size: 16px; font-weight: bold; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+
+        /* 通常モードのプロンプトカードのデザイン */
+        .prompt-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .prompt-card-title { font-size: 16px; font-weight: bold; margin: 0 0 15px 0; color: #333; }
+        .copy-btn-large { width: 100%; font-size: 16px; font-weight: bold; padding: 15px; background-color: #007bff; color: white; border-radius: 6px; margin-bottom: 15px; }
+        .prompt-card-note { font-size: 13px; color: #555; background: #fff8e1; padding: 10px; border-left: 4px solid #ffc107; border-radius: 4px; margin-bottom: 10px; white-space: pre-wrap; }
+        
+        /* 画像表示エリア */
+        .prompt-card-image-wrapper { margin-bottom: 15px; text-align: center; }
+        .prompt-card-image { max-width: 100%; border-radius: 8px; border: 1px solid #eee; display: none; margin-top: 10px; }
+        
+        .prompt-card-content { background-color: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #dee2e6; font-size: 14px; margin-bottom: 10px; white-space: pre-wrap; color: #333; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+        .prompt-card-content.expanded { -webkit-line-clamp: unset; }
+        .toggle-btn { font-size: 12px; padding: 6px 12px; background-color: #e2e8f0; color: #333; border-radius: 4px; display: inline-block; margin-bottom: 5px; font-weight: bold; }
+        
+        .edit-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .edit-title-box { flex: 1; background-color: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6; font-weight: bold; word-break: break-all; }
+        .order-btns { display: flex; flex-direction: column; gap: 5px; }
+        .order-btn { padding: 5px 10px; font-size: 12px; background-color: #cbd5e1; color: #333; }
+        .action-btns { display: flex; justify-content: flex-end; gap: 10px; }
+        .action-btns button { padding: 8px 15px; }
+
+        /* 入力フォームの画像アップロードエリア */
+        .form-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; font-size: 14px; }
+        input[type="text"], textarea, select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; background-color: #fff; }
+        textarea { height: 150px; resize: vertical; }
+        
+        .image-upload-box { border: 2px dashed #ccc; border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 15px; background-color: #f8f9fa; }
+        #preview-prompt-image { max-width: 100%; max-height: 200px; border-radius: 4px; display: none; margin: 10px auto; }
+        #btn-remove-image { display: none; margin: 5px auto; padding: 5px 10px; font-size: 12px; }
+
+        .form-actions { display: flex; gap: 10px; }
+        .form-actions button { flex: 1; padding: 15px; }
+
+        .top-nav { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .section-title { font-size: 16px; color: #333; margin: 0 0 15px 0; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
+
+        .data-management { display: flex; flex-direction: column; gap: 10px; margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ccc; }
+        .data-row { display: flex; gap: 10px; }
+        .data-row button { flex: 1; padding: 15px 10px; font-size: 13px; }
+
+        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 20px; display: none; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.2); text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 id="main-title">管理画面</h1>
+
+    <div id="view-normal-category" class="view-section" style="display: none;">
+        <button id="btn-edit-mode" class="btn-dark full-width-btn" onclick="showEditMenu()">⚙️ 編集モード</button>
+        <div id="container-normal-category"><button class="category-btn">📁 ちびキャラ化 <span style="font-size:12px; font-weight:normal; color:#666;">(2)</span></button><button class="category-btn">📁 画像加工 <span style="font-size:12px; font-weight:normal; color:#666;">(7)</span></button><button class="category-btn">📁 文字加工 <span style="font-size:12px; font-weight:normal; color:#666;">(1)</span></button><button class="category-btn">📁 LINEスタンプ <span style="font-size:12px; font-weight:normal; color:#666;">(1)</span></button></div>
+    </div>
+
+    <div id="view-normal-prompt" class="view-section" style="display: none;">
+        <div class="top-nav">
+            <button class="btn-gray" onclick="showNormalCategoryList()">🔙 カテゴリ一覧へ戻る</button>
+        </div>
+        <h2 id="title-normal-prompt" class="section-title">カテゴリ名</h2>
+        <div id="container-normal-prompt"></div>
+    </div>
+
+    <div id="view-edit-menu" class="view-section" style="display: block;">
+        <div class="top-nav">
+            <button class="btn-gray full-width-btn" onclick="showNormalCategoryList()">🔙 通常モードへ戻る</button>
+        </div>
+        <h2 class="section-title">編集メニュー</h2>
+        
+        <button class="btn-blue full-width-btn" onclick="showEditCategoryList()">📁 カテゴリの編集（並べ替え・追加・削除）</button>
+        <button class="btn-green full-width-btn" onclick="showEditPromptCategorySelect()">📝 プロンプトの編集（追加・移動・削除）</button>
+
+        <div class="data-management">
+            <button class="btn-yellow" style="padding: 15px;" onclick="exportSharedHtml()">🎁 閲覧専用HTMLを書き出す（GitHub公開用）</button>
+            <div class="data-row">
+                <button class="btn-blue" style="background-color: #17a2b8;" onclick="exportData()">💾 バックアップ</button>
+                <button class="btn-blue" style="background-color: #6f42c1;" onclick="document.getElementById('import-file').click()">📂 復元</button>
+                <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+            </div>
+        </div>
+    </div>
+
+    <div id="view-edit-category-list" class="view-section" style="display: none;">
+        <div class="top-nav"><button class="btn-gray" onclick="showEditMenu()">🔙 メニューへ戻る</button></div>
+        <h2 class="section-title">カテゴリの編集</h2>
+        <button class="btn-blue full-width-btn" onclick="showCategoryForm()">＋ 新しいカテゴリを追加</button>
+        <div id="container-edit-category"></div>
+    </div>
+
+    <div id="view-edit-prompt-category-select" class="view-section" style="display: none;">
+        <div class="top-nav"><button class="btn-gray" onclick="showEditMenu()">🔙 メニューへ戻る</button></div>
+        <h2 class="section-title">編集するカテゴリを選択</h2>
+        <div id="container-edit-prompt-category"></div>
+    </div>
+
+    <div id="view-edit-prompt-list" class="view-section" style="display: none;">
+        <div class="top-nav"><button class="btn-gray" onclick="showEditPromptCategorySelect()">🔙 カテゴリ選択へ戻る</button></div>
+        <h2 id="title-edit-prompt" class="section-title">カテゴリ名</h2>
+        <button class="btn-green full-width-btn" onclick="showPromptForm()">＋ 新しいプロンプトを追加</button>
+        <div id="container-edit-prompt"></div>
+    </div>
+
+    <div id="view-form-category" class="view-section" style="display: none;">
+        <div class="form-container">
+            <h2 id="form-title-category" style="font-size: 18px; margin-top: 0;">カテゴリの追加</h2>
+            <input type="hidden" id="input-category-id">
+            <label>カテゴリ名</label>
+            <input type="text" id="input-category-name" placeholder="例: ブログ用">
+            <div class="form-actions">
+                <button class="btn-gray" onclick="showEditCategoryList()">キャンセル</button>
+                <button class="btn-blue" onclick="saveCategory()">保存する</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-form-prompt" class="view-section" style="display: none;">
+        <div class="form-container">
+            <h2 id="form-title-prompt" style="font-size: 18px; margin-top: 0;">プロンプトの追加</h2>
+            <input type="hidden" id="input-prompt-id">
+            <input type="hidden" id="input-prompt-original-category-id"> 
+            <input type="hidden" id="input-prompt-image-base64">
+            
+            <label>保存先カテゴリ</label>
+            <select id="input-prompt-category"></select>
+            
+            <label>タイトル (表示用)</label>
+            <input type="text" id="input-prompt-title" placeholder="例: 構成案作成">
+            
+            <label>イメージ画像 (オプション)</label>
+            <div class="image-upload-box">
+                <input type="file" id="input-prompt-image-file" accept="image/*" style="margin-bottom: 0;" onchange="handleImageUpload(event)">
+                <img id="preview-prompt-image" src="" alt="プレビュー">
+                <button id="btn-remove-image" class="btn-red" type="button" onclick="removeImage()">🗑️ 画像を削除</button>
+                <p style="font-size: 12px; color: #777; margin-top: 10px;">※選んだ画像は自動的に軽く圧縮されて保存されます</p>
+            </div>
+
+            <label>備考・使い方 (オプション)</label>
+            <textarea id="input-prompt-note" placeholder="例: このプロンプトを使う時の注意点など" style="height: 80px;"></textarea>
+
+            <label>プロンプト本文</label>
+            <textarea id="input-prompt-content" placeholder="ここにAIに送るプロンプトを入力..."></textarea>
+            
+            <div class="form-actions">
+                <button class="btn-gray" onclick="showEditPromptList(currentCategoryId)">キャンセル</button>
+                <button class="btn-green" onclick="savePrompt()">保存する</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div id="toast">コピーしました！</div>
+
+<script>
+    const IS_READ_ONLY = true;
+    const STORAGE_KEY = 'my_prompt_manager_data_v2';
+    const OLD_STORAGE_KEY = 'my_prompt_manager_data'; 
+    let currentCategoryId = null;
+
+    // ★ いただいたデータを初期データとしてセット
+    const EXPORTED_INITIAL_DATA = [{"categoryId":1774604595210,"categoryName":"ちびキャラ化","prompts":[{"id":1774603768601,"title":"ちびキャラ(背景ネオン系)","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\n小さな体と大きな頭を持つ愛らしいちびキャラ風に変換してください。3D、立体的に足まで全身、 全体的に高精細で幻想的なネオンライトドローイングにして マスターピース、生成して","note":""},{"id":1774603867583,"title":"ちびキャラ(背景そのまま可愛らしく)","content":"被写体や画像を、小さな体と大きな頭を持つ愛らしいちびキャラ風に変換してください。3D、立体的に足まで全身、画像に人物が含まれている場合は、特徴的な顔立ち、髪型、アクセサリーや個性的な服装などの認識しやすい特徴を残しつつ、きらめく目、柔らかな顔立ち、明るい表情にしてください。画像に物体、動物、または風景が含まれる場合は、同じちびキャラの比率とシンプルでかわいいスタイリングで、背景は幻想的でキラキラと光り輝く、最も認識しやすい特徴を表現してください。全体的に短く可愛らしく、滑らかなパステル調の陰影と簡略化したディテールで3Dで立体的に仕上げてください。最終的な画像は、コレクションしたくなるようなちびマスコットのように、明るく表情豊かで irresistibly charming なものにしてください。"}]},{"categoryId":1774604598820,"categoryName":"画像加工","prompts":[{"id":1774626567319,"title":"ちびキャラキーホルダーフィギュア商品写真生成プロンプト","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\n【名前】{名前}\n\n参照画像のキャラクターを忠実に再現した、「ちびキャラ風キーホルダーフィギュア」の超高精細なリアル商品写真を生成してください。\n\nキャラクター「{名前}」は、参照画像と同じ顔立ち、目の形、表情、髪型、前髪、髪色、衣装、柄、色味、アクセサリー、全体の雰囲気をできる限り忠実に維持してください。別人化せず、元画像の本人らしさをしっかり残したまま、可愛く丸みのあるデフォルメ体型のちびキャラフィギュアとして再構成してください。大きくきらめく瞳、愛らしい笑顔、なめらかな肌、 glossy PVC素材らしい自然なツヤ感、精密な造形ディテール、高級感のあるコレクタブルフィギュア仕上げにしてください。\n\n頭頂部には短いゴールドチェーンを付け、その先にリアルな金属反射のあるゴールドの回転式ナスカンを接続してください。ナスカンは実在するキーホルダーパーツのように精密で、自然な回転構造が分かる作りにしてください。\n\n商品は透明の吊り下げ式リテールパッケージに入れてください。パッケージ内の台紙は、上から下へ水色→ピンクのグラデーション。全体はポップで可愛く明るい雰囲気にし、台紙には商品名として「{名前}」を丸みのある太字のポップフォントで大きく入れてください。台紙には控えめなキラキラ、ツヤ感、プレミアム玩具風の装飾を加えてください。\n\n構図は、パッケージされた商品全体が正面から見やすく、商品全体がしっかり収まる店頭販売用のリアルな商品写真にしてください。背景は、ボケた店内棚や売り場を感じさせる softly blurred な背景にして、自然な bokeh と奥行きを出してください。商品が主役で、背景は控えめにぼかしてください。\n\nマクロレンズ、f/2.0、浅い被写界深度、ソフトスタジオライティング、反射が美しく見える照明、ハイパーリアル3D、超高精細、8K、masterpiece quality、premium collectible toy product photo。\n\n重要：\nキャラクターデザインは参照画像に極めて忠実にすること。\n髪型、衣装、顔立ち、アクセサリーを変更しないこと。\n元の色味と本人らしさを維持すること。\n余計な小物を増やさないこと。\nアクセサリーや手足を重複させないこと。\n文字は「{名前}」のみを自然に正しく表示すること。\n実在する店頭販売用キーホルダー商品のような完成度にすること。","note":"プロンプトの【名前】{名前}←この{名前}の部分を表示させたい名前に変更して利用。","image":""},{"id":1774625775348,"title":"幻想的に輝く夢幻デジタルアート","content":"この参照画像をもとに、以下の内容で画像生成してください。\n超高精細で幻想的でキラキラと光り輝く夢のようなデジタルアート\nマスターピース","note":""},{"id":1774606405868,"title":"ポートレート(画像サイズは元のまま)","content":"添付画像を参照して、キャラクターの顔立ち・目の形・まつ毛・鼻・口元・肌の質感・髪型・前髪の流れ・髪色・耳の小さなピアスなどの装飾品・全体のクールで静かな雰囲気を維持してください。参照画像のキャラクターの特徴は変更しない（別人化しない）。 装飾品（帽子・ピアス・アクセサリー類）は参照画像にあるものだけを再現してください。参照画像に帽子を被っていない場合は、帽子を追加しないでください。参照画像にある場合のみ、帽子の形状・被り方・位置関係を維持してください。 スタイルは、超高精細でシネマティックなアニメ調ポートレート。 構図は縦長9:16のスマホ壁紙構図、 目元〜鼻〜唇が印象的に見える構図。髪の毛は参照画像の長さ・流れ・毛束感を維持し、細い毛束が顔に自然にかかる表現にする。 ライティングは、斜め上から差し込む強い光で、顔に鋭い光と影の帯を作る。 全体は参照画像の色設計を優先しつつ、低照度（low-key）でコントラスト強め、黒・深いネイビー・白系の陰影を活かす。 肌はなめらかで透明感があり、唇は自然なツヤ感。 背景はほぼ真っ黒でミニマル、不要な物は入れない。 雰囲気は、洗練・静かな緊張感・上品・クール・モード系。 仕上げ：高精細、繊細な線、ドラマチックな陰影、微細なハイライト、ソフトなグロー、映画のワンシーンのような空気感。 文字・ロゴ・UI表示は入れない。不要なアクセサリーの追加、背景装飾、過剰な笑顔、派手な色味、複数人物、透かしは入れない。 画像生成して"},{"id":1774606362889,"title":"ポートレート顔アップ","content":"添付画像を参照して、キャラクターの顔立ち・目の形・まつ毛・鼻・口元・肌の質感・髪型・前髪の流れ・髪色・耳の小さなピアスなどの装飾品・全体のクールで静かな雰囲気を維持してください。参照画像のキャラクターの特徴は変更しない（別人化しない）。\n\n装飾品（帽子・ピアス・アクセサリー類）は参照画像にあるものだけを再現してください。参照画像に帽子を被っていない場合は、帽子を追加しないでください。参照画像にある場合のみ、帽子の形状・被り方・位置関係を維持してください。\n\nスタイルは、超高精細でシネマティックなアニメ調ポートレート。 構図は縦長9:16のスマホ壁紙構図、顔の超接写（extreme close-up）。 片目を主役にし、目元〜鼻〜唇が印象的に見える構図。顔の一部がフレームアウトしてもよい。 髪の毛は参照画像の長さ・流れ・毛束感を維持し、細い毛束が顔に自然にかかる表現にする。\n\nライティングは、斜め上から差し込む強い光で、顔に鋭い光と影の帯を作る。 全体は参照画像の色設計を優先しつつ、低照度（low-key）でコントラスト強め、黒・深いネイビー・白系の陰影を活かす。 肌はなめらかで透明感があり、唇は自然なツヤ感。 背景はほぼ真っ黒でミニマル、不要な物は入れない。\n\n雰囲気は、洗練・静かな緊張感・上品・クール・モード系。 仕上げ：高精細、繊細な線、ドラマチックな陰影、微細なハイライト、ソフトなグロー、映画のワンシーンのような空気感。 文字・ロゴ・UI表示は入れない。不要なアクセサリーの追加、背景装飾、過剰な笑顔、派手な色味、複数人物、透かしは入れない。 画像生成して"},{"id":1774603824625,"title":"真上俯瞰魚眼でフードをつままれた浮遊キス顔全身ポートレート","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\n参照人物を完全一致。天井からの真上俯瞰＋魚眼。上側からの手がフードの頂点をつまみ、布が引っ張られて“ちょん”と持ち上がる。人物の肩が少し上がり、軽く宙に浮いたように見える。表情は参照画像と同じキス顔（唇をすぼめる、頬ぷく、目は大きく潤む）。全身が写り、背景は参照場所と同じ。","note":""},{"id":1774603805001,"title":"顎上げクローズアップのサイケデリック都市グラフィティポートレート","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\nサイケデリックなポートレートはクローズアップの顔写真で、正面を向きつつ、少し顎を上げたポーズにして、自信 。態度。 芸術的な強さを表現してください。 全体の雰囲気は、ざらついた手描き風で、グラフィティと都市のジャーナルが融合したようなスタイルにしてください。混沌とした鉛筆のスケッチラインを取り入れてください。","note":""},{"id":1774603845193,"title":"黒背景ネオン発光ラインアート化プロンプト","content":"添付したキャラクター画像を参照し、キャラの輪郭、表情、髪型、衣装、装飾、ポーズは完全に維持する。\n背景は完全な真っ黒（#000000）にする。\n仕上げは「ネオン発光のラインアート」スタイル：輪郭線と主要ディテールを発光する線で描き、線の発光は強め、外側にグロー（bloom）を出す。\n色は多色のネオングラデーション（シアン、エメラルド、ブルー、パープル、ピンク、オレンジ、ゴールド）で、部位ごとに自然に色相が変化する。\n影や塗りは最小限で、黒い面を多く残し、線と発光で立体感を表現する。\n目はキラっとしたハイライトを強調し、虹彩にもネオンの反射を入れる。\n服のファーやラメ素材は、線が密になるように描写し、光粒子（小さな点光・火花・きらめき）を周囲に散らす。\n被写界深度は不要、背景に模様や風景は入れない。\n画面全体は高コントラストで、サイバーパンク風のネオン発光表現。\n超高精細、マスターピース、8K、クリーンなライン、シャープ。"}]},{"categoryId":1774604617767,"categoryName":"文字加工","prompts":[{"id":1774603789008,"title":"質感転写キラキラ3D筆文字ロゴ生成プロンプト","content":"左側の 【物体】 の質感を維持したまま\n右側の文字のロゴに適用して\nキラキラしたリアルな3Dロゴを作成してください。\nリアルな写真のように見える形で\nシネマ4 D、8K解像度で出力して。\nロゴの形は必ず維持して、\nロゴの線は太く大きく、\n躍動感のある習字の雰囲気で、\n画像の横幅いっぱいになるように\nロゴを出力して。\n背景は透過して。\nまた、ロゴは宙に浮いている\n1 : 1の縮尺","note":"加工したいテキストの画像と質感にしたい画像2つ準備して利用"}]},{"categoryId":1774625891696,"categoryName":"LINEスタンプ","prompts":[{"id":1774625915807,"title":"女の子の感情表現LINEスタンプ9種グリッド制作プロンプト","content":"3行3列グリッドで9個のLINEスタンプを作成してください。\n左から右、上から下の順で画像が見切れないように並べます。\n次のリストに沿った【画像】のイラストと吹き出しテキストをお願いします :\n1.「にゃはは！」ー笑顔で手を上げる女の子\n2.「ガーン！」ーショックを受けてる女の子\n3.「ありがと！」ー感謝してる女の子\n4.「お疲れ様♡」ー労ってくれる女の子\n5.「プンプン💢」ー怒って激怒してる女の子\n6.「大好き♡」告白してる女の子\n7.「いけー！」応援してる女の子\n8.「いやぁ」泣き喚いてる女の子\n9.「タップ！」たくさん画面を押してる女の子"}]}];
+
+    function getAppData() {
+        try {
+            if (IS_READ_ONLY && EXPORTED_INITIAL_DATA) return EXPORTED_INITIAL_DATA;
+            let data = localStorage.getItem(STORAGE_KEY);
+            if (data) return JSON.parse(data);
+            if (EXPORTED_INITIAL_DATA) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(EXPORTED_INITIAL_DATA));
+                return EXPORTED_INITIAL_DATA;
+            }
+            let oldData = localStorage.getItem(OLD_STORAGE_KEY);
+            if (oldData) {
+                let parsedOld = JSON.parse(oldData);
+                if (parsedOld.length > 0) {
+                    let migratedData = [{ categoryId: Date.now(), categoryName: "未分類 (旧データ)", prompts: parsedOld }];
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedData));
+                    return migratedData;
+                }
+            }
+            return [];
+        } catch (e) { return window.tempAppData || EXPORTED_INITIAL_DATA || []; }
+    }
+
+    function saveAppData(data) {
+        if (IS_READ_ONLY) return; 
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } 
+        catch (e) { window.tempAppData = data; alert('セキュリティ制限によりデータが保存できません。バックアップをご利用ください。'); }
+    }
+
+    function hideAllViews() { document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none'); window.scrollTo(0, 0); }
+    function showView(viewId) { hideAllViews(); document.getElementById(viewId).style.display = 'block'; }
+
+    function showNormalCategoryList() {
+        showView('view-normal-category'); document.getElementById('main-title').textContent = 'プロンプト一覧';
+        const data = getAppData(); const container = document.getElementById('container-normal-category'); container.innerHTML = '';
+        if (data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #777;">プロンプトがありません。</p>'; return; }
+        data.forEach(cat => {
+            const btn = document.createElement('button'); btn.className = 'category-btn';
+            btn.innerHTML = `📁 ${cat.categoryName} <span style="font-size:12px; font-weight:normal; color:#666;">(${cat.prompts.length})</span>`;
+            btn.onclick = () => showNormalPromptList(cat.categoryId); container.appendChild(btn);
+        });
+    }
+
+    function showNormalPromptList(categoryId) {
+        const data = getAppData(); const category = data.find(c => c.categoryId === categoryId);
+        if (!category) return showNormalCategoryList();
+        showView('view-normal-prompt'); document.getElementById('title-normal-prompt').textContent = `📁 ${category.categoryName}`;
+        const container = document.getElementById('container-normal-prompt'); container.innerHTML = '';
+        if (category.prompts.length === 0) { container.innerHTML = '<p style="text-align: center; color: #777;">プロンプトがありません。</p>'; return; }
+        
+        category.prompts.forEach(prompt => {
+            const item = document.createElement('div');
+            item.className = 'prompt-card';
+            
+            // 1. タイトル
+            const title = document.createElement('h3');
+            title.className = 'prompt-card-title';
+            title.textContent = prompt.title;
+            item.appendChild(title);
+            
+            // 2. コピーボタン
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn-large';
+            copyBtn.innerHTML = '📋 コピーする';
+            copyBtn.onclick = () => copyText(prompt.content);
+            item.appendChild(copyBtn);
+
+            // ★ 追加: 画像のトグルボタン＆表示エリア（画像が登録されている場合のみ表示）
+            if (prompt.image) {
+                const imgWrapper = document.createElement('div');
+                imgWrapper.className = 'prompt-card-image-wrapper';
+                
+                const imgToggleBtn = document.createElement('button');
+                imgToggleBtn.className = 'btn-outline full-width-btn';
+                imgToggleBtn.style.padding = '10px';
+                imgToggleBtn.style.marginBottom = '0';
+                imgToggleBtn.innerHTML = '🖼️ イメージ画像を見る';
+                
+                const imgElement = document.createElement('img');
+                imgElement.className = 'prompt-card-image';
+                imgElement.src = prompt.image;
+                
+                imgToggleBtn.onclick = () => {
+                    if (imgElement.style.display === 'block') {
+                        imgElement.style.display = 'none';
+                        imgToggleBtn.innerHTML = '🖼️ イメージ画像を見る';
+                    } else {
+                        imgElement.style.display = 'block';
+                        imgToggleBtn.innerHTML = '🖼️ 画像を閉じる';
+                    }
+                };
+                
+                imgWrapper.appendChild(imgToggleBtn);
+                imgWrapper.appendChild(imgElement);
+                item.appendChild(imgWrapper);
+            }
+            
+            // 3. 備考
+            if (prompt.note) {
+                const note = document.createElement('div');
+                note.className = 'prompt-card-note';
+                note.textContent = prompt.note;
+                item.appendChild(note);
+            }
+            
+            // 4. プロンプト本文のプレビュー
+            const contentBox = document.createElement('div');
+            contentBox.className = 'prompt-card-content';
+            contentBox.textContent = prompt.content;
+            item.appendChild(contentBox);
+            
+            // 5. 全て表示 / 折りたたむボタン
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'toggle-btn';
+            toggleBtn.textContent = '🔽 全て表示';
+            toggleBtn.onclick = () => {
+                contentBox.classList.toggle('expanded');
+                toggleBtn.textContent = contentBox.classList.contains('expanded') ? '🔼 折りたたむ' : '🔽 全て表示';
+            };
+            item.appendChild(toggleBtn);
+            
+            container.appendChild(item);
+        });
+    }
+
+    function showEditMenu() { showView('view-edit-menu'); document.getElementById('main-title').textContent = '管理画面'; }
+    function showEditCategoryList() {
+        showView('view-edit-category-list'); const data = getAppData(); const container = document.getElementById('container-edit-category'); container.innerHTML = '';
+        data.forEach((cat, index) => {
+            const item = document.createElement('div'); item.className = 'list-item';
+            const header = document.createElement('div'); header.className = 'edit-header';
+            const titleBox = document.createElement('div'); titleBox.className = 'edit-title-box'; titleBox.textContent = cat.categoryName;
+            const orderBtns = document.createElement('div'); orderBtns.className = 'order-btns';
+            const upBtn = document.createElement('button'); upBtn.className = 'order-btn'; upBtn.textContent = '▲'; upBtn.disabled = index === 0; upBtn.onclick = () => moveCategory(index, -1);
+            const downBtn = document.createElement('button'); downBtn.className = 'order-btn'; downBtn.textContent = '▼'; downBtn.disabled = index === data.length - 1; downBtn.onclick = () => moveCategory(index, 1);
+            orderBtns.appendChild(upBtn); orderBtns.appendChild(downBtn); header.appendChild(titleBox); header.appendChild(orderBtns);
+            const actionBtns = document.createElement('div'); actionBtns.className = 'action-btns';
+            const editBtn = document.createElement('button'); editBtn.className = 'btn-yellow'; editBtn.textContent = '名前変更'; editBtn.onclick = () => showCategoryForm(cat.categoryId);
+            const deleteBtn = document.createElement('button'); deleteBtn.className = 'btn-red'; deleteBtn.textContent = '削除'; deleteBtn.onclick = () => deleteCategory(cat.categoryId);
+            actionBtns.appendChild(editBtn); actionBtns.appendChild(deleteBtn); item.appendChild(header); item.appendChild(actionBtns); container.appendChild(item);
+        });
+    }
+    function moveCategory(index, direction) { let data = getAppData(); let temp = data[index]; data[index] = data[index + direction]; data[index + direction] = temp; saveAppData(data); showEditCategoryList(); }
+    function showCategoryForm(id = null) {
+        showView('view-form-category'); const nameInput = document.getElementById('input-category-name'); const idInput = document.getElementById('input-category-id'); const title = document.getElementById('form-title-category');
+        if (id) { const cat = getAppData().find(c => c.categoryId === id); title.textContent = 'カテゴリ名の変更'; nameInput.value = cat.categoryName; idInput.value = cat.categoryId; } 
+        else { title.textContent = '新しいカテゴリの追加'; nameInput.value = ''; idInput.value = ''; }
+    }
+    function saveCategory() {
+        const name = document.getElementById('input-category-name').value.trim(); const idStr = document.getElementById('input-category-id').value;
+        if (!name) { alert('カテゴリ名を入力してください。'); return; }
+        let data = getAppData();
+        if (idStr) { const cat = data.find(c => c.categoryId === Number(idStr)); if (cat) cat.categoryName = name; } 
+        else { data.push({ categoryId: Date.now(), categoryName: name, prompts: [] }); }
+        saveAppData(data); showEditCategoryList();
+    }
+    function deleteCategory(id) { if (confirm('カテゴリと中のプロンプトをすべて削除しますか？\n※取り消せません。')) { let data = getAppData(); data = data.filter(c => c.categoryId !== id); saveAppData(data); showEditCategoryList(); } }
+    function showEditPromptCategorySelect() {
+        showView('view-edit-prompt-category-select'); const data = getAppData(); const container = document.getElementById('container-edit-prompt-category'); container.innerHTML = '';
+        if (data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #777;">カテゴリがありません。</p>'; return; }
+        data.forEach(cat => { const btn = document.createElement('button'); btn.className = 'category-btn'; btn.innerHTML = `📁 ${cat.categoryName} <span style="font-size:12px; font-weight:normal; color:#666;">(${cat.prompts.length})</span>`; btn.onclick = () => showEditPromptList(cat.categoryId); container.appendChild(btn); });
+    }
+    function showEditPromptList(categoryId) {
+        currentCategoryId = categoryId; const data = getAppData(); const category = data.find(c => c.categoryId === categoryId);
+        if (!category) return showEditPromptCategorySelect();
+        showView('view-edit-prompt-list'); document.getElementById('title-edit-prompt').textContent = `📁 ${category.categoryName} の編集`;
+        const container = document.getElementById('container-edit-prompt'); container.innerHTML = '';
+        category.prompts.forEach(prompt => {
+            const item = document.createElement('div'); item.className = 'list-item';
+            const titleBox = document.createElement('div'); titleBox.className = 'edit-title-box'; titleBox.style.marginBottom = '10px'; titleBox.textContent = prompt.title;
+            const actionBtns = document.createElement('div'); actionBtns.className = 'action-btns';
+            const editBtn = document.createElement('button'); editBtn.className = 'btn-yellow'; editBtn.textContent = '編集'; editBtn.onclick = () => showPromptForm(prompt.id);
+            const deleteBtn = document.createElement('button'); deleteBtn.className = 'btn-red'; deleteBtn.textContent = '削除'; deleteBtn.onclick = () => deletePrompt(prompt.id);
+            actionBtns.appendChild(editBtn); actionBtns.appendChild(deleteBtn); item.appendChild(titleBox); item.appendChild(actionBtns); container.appendChild(item);
+        });
+    }
+    
+    // ★ 変更点: 画像プレビュー関連の処理を追加
+    function showPromptForm(promptId = null) {
+        showView('view-form-prompt');
+        const titleInput = document.getElementById('input-prompt-title'); const contentInput = document.getElementById('input-prompt-content'); 
+        const noteInput = document.getElementById('input-prompt-note'); 
+        const imageBase64Input = document.getElementById('input-prompt-image-base64');
+        const imageFile = document.getElementById('input-prompt-image-file');
+        const imagePreview = document.getElementById('preview-prompt-image');
+        const removeImgBtn = document.getElementById('btn-remove-image');
+        
+        const idInput = document.getElementById('input-prompt-id'); const origCatIdInput = document.getElementById('input-prompt-original-category-id'); const categorySelect = document.getElementById('input-prompt-category'); const formTitle = document.getElementById('form-title-prompt');
+        const data = getAppData(); categorySelect.innerHTML = '';
+        data.forEach(cat => { const option = document.createElement('option'); option.value = cat.categoryId; option.textContent = cat.categoryName; categorySelect.appendChild(option); });
+        
+        // フォームのリセット
+        imageFile.value = '';
+        
+        if (promptId) {
+            const category = data.find(c => c.categoryId === currentCategoryId); const prompt = category.prompts.find(p => p.id === promptId);
+            formTitle.textContent = 'プロンプトの編集'; 
+            titleInput.value = prompt.title; 
+            noteInput.value = prompt.note || ''; 
+            contentInput.value = prompt.content; 
+            
+            // 画像のセット
+            if (prompt.image) {
+                imageBase64Input.value = prompt.image;
+                imagePreview.src = prompt.image;
+                imagePreview.style.display = 'block';
+                removeImgBtn.style.display = 'inline-block';
+            } else {
+                removeImage();
+            }
+            
+            idInput.value = prompt.id; origCatIdInput.value = currentCategoryId; categorySelect.value = currentCategoryId;
+        } else {
+            formTitle.textContent = '新しいプロンプトの追加'; 
+            titleInput.value = ''; noteInput.value = ''; contentInput.value = ''; 
+            removeImage();
+            idInput.value = ''; origCatIdInput.value = ''; categorySelect.value = currentCategoryId;
+        }
+    }
+
+    // 画像のアップロードと軽量化処理
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                // スマホ保存用に画像を圧縮（最大幅を500pxに制限）
+                const canvas = document.createElement('canvas');
+                const MAX_SIZE = 500;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                } else {
+                    if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // JPEG形式で少し画質を落として軽量なBase64文字列に変換
+                const base64Str = canvas.toDataURL('image/jpeg', 0.7);
+                
+                document.getElementById('input-prompt-image-base64').value = base64Str;
+                document.getElementById('preview-prompt-image').src = base64Str;
+                document.getElementById('preview-prompt-image').style.display = 'block';
+                document.getElementById('btn-remove-image').style.display = 'inline-block';
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 画像の削除
+    function removeImage() {
+        document.getElementById('input-prompt-image-base64').value = '';
+        document.getElementById('input-prompt-image-file').value = '';
+        document.getElementById('preview-prompt-image').src = '';
+        document.getElementById('preview-prompt-image').style.display = 'none';
+        document.getElementById('btn-remove-image').style.display = 'none';
+    }
+    
+    function savePrompt() {
+        const title = document.getElementById('input-prompt-title').value.trim(); 
+        const content = document.getElementById('input-prompt-content').value.trim(); 
+        const note = document.getElementById('input-prompt-note').value.trim(); 
+        const image = document.getElementById('input-prompt-image-base64').value; // 画像データを取得
+        
+        const idStr = document.getElementById('input-prompt-id').value; const origCatIdStr = document.getElementById('input-prompt-original-category-id').value; const newCatId = Number(document.getElementById('input-prompt-category').value);
+        if (!title || !content) { alert('タイトルと本文を入力してください。'); return; }
+        
+        let data = getAppData();
+        if (idStr) {
+            const promptId = Number(idStr); const origCatId = Number(origCatIdStr);
+            if (origCatId === newCatId) { 
+                let category = data.find(c => c.categoryId === origCatId); let prompt = category.prompts.find(p => p.id === promptId); 
+                prompt.title = title; prompt.content = content; prompt.note = note; prompt.image = image;
+            } else {
+                let oldCategory = data.find(c => c.categoryId === origCatId); let newCategory = data.find(c => c.categoryId === newCatId);
+                let promptObj = oldCategory.prompts.find(p => p.id === promptId); oldCategory.prompts = oldCategory.prompts.filter(p => p.id !== promptId); 
+                promptObj.title = title; promptObj.content = content; promptObj.note = note; promptObj.image = image;
+                newCategory.prompts.unshift(promptObj);
+            }
+        } else { 
+            let newCategory = data.find(c => c.categoryId === newCatId); 
+            newCategory.prompts.unshift({ id: Date.now(), title: title, content: content, note: note, image: image }); 
+        }
+        saveAppData(data); showEditPromptList(newCatId);
+    }
+    function deletePrompt(id) { if (confirm('削除しますか？')) { let data = getAppData(); let category = data.find(c => c.categoryId === currentCategoryId); category.prompts = category.prompts.filter(p => p.id !== id); saveAppData(data); showEditPromptList(currentCategoryId); } }
+
+    function copyText(text) { if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(showToast).catch(() => fallbackCopy(text)); } else { fallbackCopy(text); } }
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea'); textarea.value = text; textarea.style.position = 'fixed'; textarea.style.opacity = '0';
+        document.body.appendChild(textarea); textarea.select();
+        try { document.execCommand('copy'); showToast(); } catch (err) { alert("コピーに失敗しました。"); } document.body.removeChild(textarea);
+    }
+    function showToast() { const toast = document.getElementById('toast'); toast.style.display = 'block'; setTimeout(() => { toast.style.display = 'none'; }, 2000); }
+
+    function exportData() {
+        const data = getAppData(); if (data.length === 0) { alert('保存するデータがありません。'); return; }
+        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' }); const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'プロンプト一覧_バックアップ.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+    function importData(event) {
+        const file = event.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const parsedData = JSON.parse(e.target.result);
+                if (Array.isArray(parsedData) && (parsedData.length === 0 || parsedData[0].categoryId)) {
+                    if (confirm('データを復元します。現在のデータは上書きされますがよろしいですか？')) { saveAppData(parsedData); showEditMenu(); alert('データを復元しました！'); }
+                } else { alert('無効なファイルです。'); }
+            } catch (error) { alert('読み込みに失敗しました。'); }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    function exportSharedHtml() {
+        const data = getAppData(); if (data.length === 0) { alert('共有するデータがありません。'); return; }
+        let htmlContent = "<!DOCTYPE html>\n<html lang=\"ja\">\n" + document.documentElement.innerHTML + "\n</html>";
+        const dataStr = JSON.stringify(data);
+        htmlContent = htmlContent.replace(/const EXPORTED_INITIAL_DATA = [{"categoryId":1774604595210,"categoryName":"ちびキャラ化","prompts":[{"id":1774603768601,"title":"ちびキャラ(背景ネオン系)","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\n小さな体と大きな頭を持つ愛らしいちびキャラ風に変換してください。3D、立体的に足まで全身、 全体的に高精細で幻想的なネオンライトドローイングにして マスターピース、生成して","note":""},{"id":1774603867583,"title":"ちびキャラ(背景そのまま可愛らしく)","content":"被写体や画像を、小さな体と大きな頭を持つ愛らしいちびキャラ風に変換してください。3D、立体的に足まで全身、画像に人物が含まれている場合は、特徴的な顔立ち、髪型、アクセサリーや個性的な服装などの認識しやすい特徴を残しつつ、きらめく目、柔らかな顔立ち、明るい表情にしてください。画像に物体、動物、または風景が含まれる場合は、同じちびキャラの比率とシンプルでかわいいスタイリングで、背景は幻想的でキラキラと光り輝く、最も認識しやすい特徴を表現してください。全体的に短く可愛らしく、滑らかなパステル調の陰影と簡略化したディテールで3Dで立体的に仕上げてください。最終的な画像は、コレクションしたくなるようなちびマスコットのように、明るく表情豊かで irresistibly charming なものにしてください。"}]},{"categoryId":1774604598820,"categoryName":"画像加工","prompts":[{"id":1774626567319,"title":"ちびキャラキーホルダーフィギュア商品写真生成プロンプト","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\n【名前】{名前}\n\n参照画像のキャラクターを忠実に再現した、「ちびキャラ風キーホルダーフィギュア」の超高精細なリアル商品写真を生成してください。\n\nキャラクター「{名前}」は、参照画像と同じ顔立ち、目の形、表情、髪型、前髪、髪色、衣装、柄、色味、アクセサリー、全体の雰囲気をできる限り忠実に維持してください。別人化せず、元画像の本人らしさをしっかり残したまま、可愛く丸みのあるデフォルメ体型のちびキャラフィギュアとして再構成してください。大きくきらめく瞳、愛らしい笑顔、なめらかな肌、 glossy PVC素材らしい自然なツヤ感、精密な造形ディテール、高級感のあるコレクタブルフィギュア仕上げにしてください。\n\n頭頂部には短いゴールドチェーンを付け、その先にリアルな金属反射のあるゴールドの回転式ナスカンを接続してください。ナスカンは実在するキーホルダーパーツのように精密で、自然な回転構造が分かる作りにしてください。\n\n商品は透明の吊り下げ式リテールパッケージに入れてください。パッケージ内の台紙は、上から下へ水色→ピンクのグラデーション。全体はポップで可愛く明るい雰囲気にし、台紙には商品名として「{名前}」を丸みのある太字のポップフォントで大きく入れてください。台紙には控えめなキラキラ、ツヤ感、プレミアム玩具風の装飾を加えてください。\n\n構図は、パッケージされた商品全体が正面から見やすく、商品全体がしっかり収まる店頭販売用のリアルな商品写真にしてください。背景は、ボケた店内棚や売り場を感じさせる softly blurred な背景にして、自然な bokeh と奥行きを出してください。商品が主役で、背景は控えめにぼかしてください。\n\nマクロレンズ、f/2.0、浅い被写界深度、ソフトスタジオライティング、反射が美しく見える照明、ハイパーリアル3D、超高精細、8K、masterpiece quality、premium collectible toy product photo。\n\n重要：\nキャラクターデザインは参照画像に極めて忠実にすること。\n髪型、衣装、顔立ち、アクセサリーを変更しないこと。\n元の色味と本人らしさを維持すること。\n余計な小物を増やさないこと。\nアクセサリーや手足を重複させないこと。\n文字は「{名前}」のみを自然に正しく表示すること。\n実在する店頭販売用キーホルダー商品のような完成度にすること。","note":"プロンプトの【名前】{名前}←この{名前}の部分を表示させたい名前に変更して利用。","image":""},{"id":1774625775348,"title":"幻想的に輝く夢幻デジタルアート","content":"この参照画像をもとに、以下の内容で画像生成してください。\n超高精細で幻想的でキラキラと光り輝く夢のようなデジタルアート\nマスターピース","note":""},{"id":1774606405868,"title":"ポートレート(画像サイズは元のまま)","content":"添付画像を参照して、キャラクターの顔立ち・目の形・まつ毛・鼻・口元・肌の質感・髪型・前髪の流れ・髪色・耳の小さなピアスなどの装飾品・全体のクールで静かな雰囲気を維持してください。参照画像のキャラクターの特徴は変更しない（別人化しない）。 装飾品（帽子・ピアス・アクセサリー類）は参照画像にあるものだけを再現してください。参照画像に帽子を被っていない場合は、帽子を追加しないでください。参照画像にある場合のみ、帽子の形状・被り方・位置関係を維持してください。 スタイルは、超高精細でシネマティックなアニメ調ポートレート。 構図は縦長9:16のスマホ壁紙構図、 目元〜鼻〜唇が印象的に見える構図。髪の毛は参照画像の長さ・流れ・毛束感を維持し、細い毛束が顔に自然にかかる表現にする。 ライティングは、斜め上から差し込む強い光で、顔に鋭い光と影の帯を作る。 全体は参照画像の色設計を優先しつつ、低照度（low-key）でコントラスト強め、黒・深いネイビー・白系の陰影を活かす。 肌はなめらかで透明感があり、唇は自然なツヤ感。 背景はほぼ真っ黒でミニマル、不要な物は入れない。 雰囲気は、洗練・静かな緊張感・上品・クール・モード系。 仕上げ：高精細、繊細な線、ドラマチックな陰影、微細なハイライト、ソフトなグロー、映画のワンシーンのような空気感。 文字・ロゴ・UI表示は入れない。不要なアクセサリーの追加、背景装飾、過剰な笑顔、派手な色味、複数人物、透かしは入れない。 画像生成して"},{"id":1774606362889,"title":"ポートレート顔アップ","content":"添付画像を参照して、キャラクターの顔立ち・目の形・まつ毛・鼻・口元・肌の質感・髪型・前髪の流れ・髪色・耳の小さなピアスなどの装飾品・全体のクールで静かな雰囲気を維持してください。参照画像のキャラクターの特徴は変更しない（別人化しない）。\n\n装飾品（帽子・ピアス・アクセサリー類）は参照画像にあるものだけを再現してください。参照画像に帽子を被っていない場合は、帽子を追加しないでください。参照画像にある場合のみ、帽子の形状・被り方・位置関係を維持してください。\n\nスタイルは、超高精細でシネマティックなアニメ調ポートレート。 構図は縦長9:16のスマホ壁紙構図、顔の超接写（extreme close-up）。 片目を主役にし、目元〜鼻〜唇が印象的に見える構図。顔の一部がフレームアウトしてもよい。 髪の毛は参照画像の長さ・流れ・毛束感を維持し、細い毛束が顔に自然にかかる表現にする。\n\nライティングは、斜め上から差し込む強い光で、顔に鋭い光と影の帯を作る。 全体は参照画像の色設計を優先しつつ、低照度（low-key）でコントラスト強め、黒・深いネイビー・白系の陰影を活かす。 肌はなめらかで透明感があり、唇は自然なツヤ感。 背景はほぼ真っ黒でミニマル、不要な物は入れない。\n\n雰囲気は、洗練・静かな緊張感・上品・クール・モード系。 仕上げ：高精細、繊細な線、ドラマチックな陰影、微細なハイライト、ソフトなグロー、映画のワンシーンのような空気感。 文字・ロゴ・UI表示は入れない。不要なアクセサリーの追加、背景装飾、過剰な笑顔、派手な色味、複数人物、透かしは入れない。 画像生成して"},{"id":1774603824625,"title":"真上俯瞰魚眼でフードをつままれた浮遊キス顔全身ポートレート","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\n参照人物を完全一致。天井からの真上俯瞰＋魚眼。上側からの手がフードの頂点をつまみ、布が引っ張られて“ちょん”と持ち上がる。人物の肩が少し上がり、軽く宙に浮いたように見える。表情は参照画像と同じキス顔（唇をすぼめる、頬ぷく、目は大きく潤む）。全身が写り、背景は参照場所と同じ。","note":""},{"id":1774603805001,"title":"顎上げクローズアップのサイケデリック都市グラフィティポートレート","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\nサイケデリックなポートレートはクローズアップの顔写真で、正面を向きつつ、少し顎を上げたポーズにして、自信 。態度。 芸術的な強さを表現してください。 全体の雰囲気は、ざらついた手描き風で、グラフィティと都市のジャーナルが融合したようなスタイルにしてください。混沌とした鉛筆のスケッチラインを取り入れてください。","note":""},{"id":1774603845193,"title":"黒背景ネオン発光ラインアート化プロンプト","content":"添付したキャラクター画像を参照し、キャラの輪郭、表情、髪型、衣装、装飾、ポーズは完全に維持する。\n背景は完全な真っ黒（#000000）にする。\n仕上げは「ネオン発光のラインアート」スタイル：輪郭線と主要ディテールを発光する線で描き、線の発光は強め、外側にグロー（bloom）を出す。\n色は多色のネオングラデーション（シアン、エメラルド、ブルー、パープル、ピンク、オレンジ、ゴールド）で、部位ごとに自然に色相が変化する。\n影や塗りは最小限で、黒い面を多く残し、線と発光で立体感を表現する。\n目はキラっとしたハイライトを強調し、虹彩にもネオンの反射を入れる。\n服のファーやラメ素材は、線が密になるように描写し、光粒子（小さな点光・火花・きらめき）を周囲に散らす。\n被写界深度は不要、背景に模様や風景は入れない。\n画面全体は高コントラストで、サイバーパンク風のネオン発光表現。\n超高精細、マスターピース、8K、クリーンなライン、シャープ。"}]},{"categoryId":1774604617767,"categoryName":"文字加工","prompts":[{"id":1774603789008,"title":"質感転写キラキラ3D筆文字ロゴ生成プロンプト","content":"左側の 【物体】 の質感を維持したまま\n右側の文字のロゴに適用して\nキラキラしたリアルな3Dロゴを作成してください。\nリアルな写真のように見える形で\nシネマ4 D、8K解像度で出力して。\nロゴの形は必ず維持して、\nロゴの線は太く大きく、\n躍動感のある習字の雰囲気で、\n画像の横幅いっぱいになるように\nロゴを出力して。\n背景は透過して。\nまた、ロゴは宙に浮いている\n1 : 1の縮尺","note":"加工したいテキストの画像と質感にしたい画像2つ準備して利用"}]},{"categoryId":1774625891696,"categoryName":"LINEスタンプ","prompts":[{"id":1774625915807,"title":"女の子の感情表現LINEスタンプ9種グリッド制作プロンプト","content":"3行3列グリッドで9個のLINEスタンプを作成してください。\n左から右、上から下の順で画像が見切れないように並べます。\n次のリストに沿った【画像】のイラストと吹き出しテキストをお願いします :\n1.「にゃはは！」ー笑顔で手を上げる女の子\n2.「ガーン！」ーショックを受けてる女の子\n3.「ありがと！」ー感謝してる女の子\n4.「お疲れ様♡」ー労ってくれる女の子\n5.「プンプン💢」ー怒って激怒してる女の子\n6.「大好き♡」告白してる女の子\n7.「いけー！」応援してる女の子\n8.「いやぁ」泣き喚いてる女の子\n9.「タップ！」たくさん画面を押してる女の子"}]}];/g, `const EXPORTED_INITIAL_DATA = [{"categoryId":1774604595210,"categoryName":"ちびキャラ化","prompts":[{"id":1774603768601,"title":"ちびキャラ(背景ネオン系)","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\n小さな体と大きな頭を持つ愛らしいちびキャラ風に変換してください。3D、立体的に足まで全身、 全体的に高精細で幻想的なネオンライトドローイングにして マスターピース、生成して","note":""},{"id":1774603867583,"title":"ちびキャラ(背景そのまま可愛らしく)","content":"被写体や画像を、小さな体と大きな頭を持つ愛らしいちびキャラ風に変換してください。3D、立体的に足まで全身、画像に人物が含まれている場合は、特徴的な顔立ち、髪型、アクセサリーや個性的な服装などの認識しやすい特徴を残しつつ、きらめく目、柔らかな顔立ち、明るい表情にしてください。画像に物体、動物、または風景が含まれる場合は、同じちびキャラの比率とシンプルでかわいいスタイリングで、背景は幻想的でキラキラと光り輝く、最も認識しやすい特徴を表現してください。全体的に短く可愛らしく、滑らかなパステル調の陰影と簡略化したディテールで3Dで立体的に仕上げてください。最終的な画像は、コレクションしたくなるようなちびマスコットのように、明るく表情豊かで irresistibly charming なものにしてください。"}]},{"categoryId":1774604598820,"categoryName":"画像加工","prompts":[{"id":1774626567319,"title":"ちびキャラキーホルダーフィギュア商品写真生成プロンプト","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\n【名前】{名前}\n\n参照画像のキャラクターを忠実に再現した、「ちびキャラ風キーホルダーフィギュア」の超高精細なリアル商品写真を生成してください。\n\nキャラクター「{名前}」は、参照画像と同じ顔立ち、目の形、表情、髪型、前髪、髪色、衣装、柄、色味、アクセサリー、全体の雰囲気をできる限り忠実に維持してください。別人化せず、元画像の本人らしさをしっかり残したまま、可愛く丸みのあるデフォルメ体型のちびキャラフィギュアとして再構成してください。大きくきらめく瞳、愛らしい笑顔、なめらかな肌、 glossy PVC素材らしい自然なツヤ感、精密な造形ディテール、高級感のあるコレクタブルフィギュア仕上げにしてください。\n\n頭頂部には短いゴールドチェーンを付け、その先にリアルな金属反射のあるゴールドの回転式ナスカンを接続してください。ナスカンは実在するキーホルダーパーツのように精密で、自然な回転構造が分かる作りにしてください。\n\n商品は透明の吊り下げ式リテールパッケージに入れてください。パッケージ内の台紙は、上から下へ水色→ピンクのグラデーション。全体はポップで可愛く明るい雰囲気にし、台紙には商品名として「{名前}」を丸みのある太字のポップフォントで大きく入れてください。台紙には控えめなキラキラ、ツヤ感、プレミアム玩具風の装飾を加えてください。\n\n構図は、パッケージされた商品全体が正面から見やすく、商品全体がしっかり収まる店頭販売用のリアルな商品写真にしてください。背景は、ボケた店内棚や売り場を感じさせる softly blurred な背景にして、自然な bokeh と奥行きを出してください。商品が主役で、背景は控えめにぼかしてください。\n\nマクロレンズ、f/2.0、浅い被写界深度、ソフトスタジオライティング、反射が美しく見える照明、ハイパーリアル3D、超高精細、8K、masterpiece quality、premium collectible toy product photo。\n\n重要：\nキャラクターデザインは参照画像に極めて忠実にすること。\n髪型、衣装、顔立ち、アクセサリーを変更しないこと。\n元の色味と本人らしさを維持すること。\n余計な小物を増やさないこと。\nアクセサリーや手足を重複させないこと。\n文字は「{名前}」のみを自然に正しく表示すること。\n実在する店頭販売用キーホルダー商品のような完成度にすること。","note":"プロンプトの【名前】{名前}←この{名前}の部分を表示させたい名前に変更して利用。","image":""},{"id":1774625775348,"title":"幻想的に輝く夢幻デジタルアート","content":"この参照画像をもとに、以下の内容で画像生成してください。\n超高精細で幻想的でキラキラと光り輝く夢のようなデジタルアート\nマスターピース","note":""},{"id":1774606405868,"title":"ポートレート(画像サイズは元のまま)","content":"添付画像を参照して、キャラクターの顔立ち・目の形・まつ毛・鼻・口元・肌の質感・髪型・前髪の流れ・髪色・耳の小さなピアスなどの装飾品・全体のクールで静かな雰囲気を維持してください。参照画像のキャラクターの特徴は変更しない（別人化しない）。 装飾品（帽子・ピアス・アクセサリー類）は参照画像にあるものだけを再現してください。参照画像に帽子を被っていない場合は、帽子を追加しないでください。参照画像にある場合のみ、帽子の形状・被り方・位置関係を維持してください。 スタイルは、超高精細でシネマティックなアニメ調ポートレート。 構図は縦長9:16のスマホ壁紙構図、 目元〜鼻〜唇が印象的に見える構図。髪の毛は参照画像の長さ・流れ・毛束感を維持し、細い毛束が顔に自然にかかる表現にする。 ライティングは、斜め上から差し込む強い光で、顔に鋭い光と影の帯を作る。 全体は参照画像の色設計を優先しつつ、低照度（low-key）でコントラスト強め、黒・深いネイビー・白系の陰影を活かす。 肌はなめらかで透明感があり、唇は自然なツヤ感。 背景はほぼ真っ黒でミニマル、不要な物は入れない。 雰囲気は、洗練・静かな緊張感・上品・クール・モード系。 仕上げ：高精細、繊細な線、ドラマチックな陰影、微細なハイライト、ソフトなグロー、映画のワンシーンのような空気感。 文字・ロゴ・UI表示は入れない。不要なアクセサリーの追加、背景装飾、過剰な笑顔、派手な色味、複数人物、透かしは入れない。 画像生成して"},{"id":1774606362889,"title":"ポートレート顔アップ","content":"添付画像を参照して、キャラクターの顔立ち・目の形・まつ毛・鼻・口元・肌の質感・髪型・前髪の流れ・髪色・耳の小さなピアスなどの装飾品・全体のクールで静かな雰囲気を維持してください。参照画像のキャラクターの特徴は変更しない（別人化しない）。\n\n装飾品（帽子・ピアス・アクセサリー類）は参照画像にあるものだけを再現してください。参照画像に帽子を被っていない場合は、帽子を追加しないでください。参照画像にある場合のみ、帽子の形状・被り方・位置関係を維持してください。\n\nスタイルは、超高精細でシネマティックなアニメ調ポートレート。 構図は縦長9:16のスマホ壁紙構図、顔の超接写（extreme close-up）。 片目を主役にし、目元〜鼻〜唇が印象的に見える構図。顔の一部がフレームアウトしてもよい。 髪の毛は参照画像の長さ・流れ・毛束感を維持し、細い毛束が顔に自然にかかる表現にする。\n\nライティングは、斜め上から差し込む強い光で、顔に鋭い光と影の帯を作る。 全体は参照画像の色設計を優先しつつ、低照度（low-key）でコントラスト強め、黒・深いネイビー・白系の陰影を活かす。 肌はなめらかで透明感があり、唇は自然なツヤ感。 背景はほぼ真っ黒でミニマル、不要な物は入れない。\n\n雰囲気は、洗練・静かな緊張感・上品・クール・モード系。 仕上げ：高精細、繊細な線、ドラマチックな陰影、微細なハイライト、ソフトなグロー、映画のワンシーンのような空気感。 文字・ロゴ・UI表示は入れない。不要なアクセサリーの追加、背景装飾、過剰な笑顔、派手な色味、複数人物、透かしは入れない。 画像生成して"},{"id":1774603824625,"title":"真上俯瞰魚眼でフードをつままれた浮遊キス顔全身ポートレート","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\n参照人物を完全一致。天井からの真上俯瞰＋魚眼。上側からの手がフードの頂点をつまみ、布が引っ張られて“ちょん”と持ち上がる。人物の肩が少し上がり、軽く宙に浮いたように見える。表情は参照画像と同じキス顔（唇をすぼめる、頬ぷく、目は大きく潤む）。全身が写り、背景は参照場所と同じ。","note":""},{"id":1774603805001,"title":"顎上げクローズアップのサイケデリック都市グラフィティポートレート","content":"この参照画像をもとに、以下の内容で画像生成してください。\n\nサイケデリックなポートレートはクローズアップの顔写真で、正面を向きつつ、少し顎を上げたポーズにして、自信 。態度。 芸術的な強さを表現してください。 全体の雰囲気は、ざらついた手描き風で、グラフィティと都市のジャーナルが融合したようなスタイルにしてください。混沌とした鉛筆のスケッチラインを取り入れてください。","note":""},{"id":1774603845193,"title":"黒背景ネオン発光ラインアート化プロンプト","content":"添付したキャラクター画像を参照し、キャラの輪郭、表情、髪型、衣装、装飾、ポーズは完全に維持する。\n背景は完全な真っ黒（#000000）にする。\n仕上げは「ネオン発光のラインアート」スタイル：輪郭線と主要ディテールを発光する線で描き、線の発光は強め、外側にグロー（bloom）を出す。\n色は多色のネオングラデーション（シアン、エメラルド、ブルー、パープル、ピンク、オレンジ、ゴールド）で、部位ごとに自然に色相が変化する。\n影や塗りは最小限で、黒い面を多く残し、線と発光で立体感を表現する。\n目はキラっとしたハイライトを強調し、虹彩にもネオンの反射を入れる。\n服のファーやラメ素材は、線が密になるように描写し、光粒子（小さな点光・火花・きらめき）を周囲に散らす。\n被写界深度は不要、背景に模様や風景は入れない。\n画面全体は高コントラストで、サイバーパンク風のネオン発光表現。\n超高精細、マスターピース、8K、クリーンなライン、シャープ。"}]},{"categoryId":1774604617767,"categoryName":"文字加工","prompts":[{"id":1774603789008,"title":"質感転写キラキラ3D筆文字ロゴ生成プロンプト","content":"左側の 【物体】 の質感を維持したまま\n右側の文字のロゴに適用して\nキラキラしたリアルな3Dロゴを作成してください。\nリアルな写真のように見える形で\nシネマ4 D、8K解像度で出力して。\nロゴの形は必ず維持して、\nロゴの線は太く大きく、\n躍動感のある習字の雰囲気で、\n画像の横幅いっぱいになるように\nロゴを出力して。\n背景は透過して。\nまた、ロゴは宙に浮いている\n1 : 1の縮尺","note":"加工したいテキストの画像と質感にしたい画像2つ準備して利用"}]},{"categoryId":1774625891696,"categoryName":"LINEスタンプ","prompts":[{"id":1774625915807,"title":"女の子の感情表現LINEスタンプ9種グリッド制作プロンプト","content":"3行3列グリッドで9個のLINEスタンプを作成してください。\n左から右、上から下の順で画像が見切れないように並べます。\n次のリストに沿った【画像】のイラストと吹き出しテキストをお願いします :\n1.「にゃはは！」ー笑顔で手を上げる女の子\n2.「ガーン！」ーショックを受けてる女の子\n3.「ありがと！」ー感謝してる女の子\n4.「お疲れ様♡」ー労ってくれる女の子\n5.「プンプン💢」ー怒って激怒してる女の子\n6.「大好き♡」告白してる女の子\n7.「いけー！」応援してる女の子\n8.「いやぁ」泣き喚いてる女の子\n9.「タップ！」たくさん画面を押してる女の子"}]}];`);
+        htmlContent = htmlContent.replace(/const IS_READ_ONLY = true;/g, `const IS_READ_ONLY = true;`);
+        const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' }); const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'index.html'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    window.onload = function() {
+        try { 
+            if (IS_READ_ONLY) { const editBtn = document.getElementById('btn-edit-mode'); if (editBtn) editBtn.style.display = 'none'; }
+            showNormalCategoryList(); 
+        } catch (e) { alert('画面の読み込み中にエラーが発生しました。'); }
+    };
+</script>
+
+
+
+</body>
+</html>
